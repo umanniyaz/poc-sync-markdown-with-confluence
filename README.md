@@ -4,6 +4,8 @@
 
 The Content Recommendation API provides batch processing capabilities for content auditing and optimization. This document outlines the complete API contract for all endpoints, including request/response formats, error handling, and usage examples.
 
+**Note:** All job results are automatically stored in S3 and SQS messages are sent with the S3 file location upon job completion.
+
 ---
 
 ## Table of Contents
@@ -13,7 +15,8 @@ The Content Recommendation API provides batch processing capabilities for conten
 3. [Job Management Endpoints](#job-management-endpoints)
 4. [Health & Configuration Endpoints](#health--configuration-endpoints)
 5. [Error Handling](#error-handling)
-6. [Examples](#examples)
+6. [S3 Integration & SQS Messaging](#s3-integration--sqs-messaging)
+7. [Examples](#examples)
 
 ---
 
@@ -22,6 +25,8 @@ The Content Recommendation API provides batch processing capabilities for conten
 ### POST /content-audit/
 
 Submits a content audit job for background processing with the new payload structure.
+
+**Output:** Results are automatically stored in S3 and SQS message is sent with S3 file location upon completion.
 
 #### Request Format
 
@@ -193,6 +198,8 @@ Submits a content audit job for background processing with the new payload struc
 ### POST /optimize-content/
 
 Submits a content optimization job for background processing based on audit output.
+
+**Output:** Results are automatically stored in S3 and SQS message is sent with S3 file location upon completion.
 
 #### Request Format
 
@@ -470,11 +477,15 @@ Retrieves the status and progress of a submitted job.
 
 ### GET /get-job-results/{job_id}
 
-Retrieves the results of a completed job.
+Retrieves the results of a completed job. Optionally provides S3 location of the result file.
 
 #### Path Parameters
 
 - `job_id` (string, required): The unique identifier of the job
+
+#### Query Parameters
+
+- `include_s3_location` (boolean, optional): If true, includes S3 file location in response
 
 #### Response Format
 
@@ -549,11 +560,17 @@ Retrieves the results of a completed job.
       "records_processed": "integer",
       "concurrent_processing": "boolean"
     }
+  },
+  "s3_location": {
+    "bucket": "string",
+    "key": "string",
+    "url": "string",
+    "expires_at": "2024-01-01T00:00:00Z"
   }
 }
 ```
 
-#### Example Response (Audit Results)
+#### Example Response (with S3 location)
 
 ```json
 {
@@ -610,11 +627,17 @@ Retrieves the results of a completed job.
       "records_processed": 1,
       "concurrent_processing": true
     }
+  },
+  "s3_location": {
+    "bucket": "content-recommendation-results",
+    "key": "audit/550e8400-e29b-41d4-a716-446655440000/results.json",
+    "url": "https://content-recommendation-results.s3.amazonaws.com/audit/550e8400-e29b-41d4-a716-446655440000/results.json",
+    "expires_at": "2024-02-01T12:00:00Z"
   }
 }
 ```
 
-#### Example Response (Optimization Results)
+#### Example Response (without S3 location)
 
 ```json
 {
@@ -630,6 +653,10 @@ Retrieves the results of a completed job.
               "size": ["10-Inches"],
               "model": ["415"]
             }
+          },
+          "token_usage": {
+            "input_tokens": 146,
+            "output_tokens": 58
           }
         }
       },
@@ -650,88 +677,15 @@ Retrieves the results of a completed job.
             }
           ]
         }
-      },
-      "optimization": {
-        "meta_info": {
-          "reference_product_id": 6799,
-          "source": "Walmart-US",
-          "account_id": "260509",
-          "major_version": "v202508010000"
-        },
-        "optimized_content": {
-          "title": {
-            "optimized_text": "CHANNELLOCK 10\" Smooth Jaw Straight Jaw Tongue and Groove Pliers, Model 415",
-            "optimization_reasoning": "Incorporated brand name, specific size, jaw type, and model number for improved clarity and searchability.",
-            "keywords_incorporated": [
-              "CHANNELLOCK",
-              "Tongue and groove pliers",
-              "smooth jaw",
-              "straight jaw"
-            ],
-            "attributes_used": [
-              "brand",
-              "size",
-              "type",
-              "model",
-              "jaw_type"
-            ],
-            "improvements_made": [
-              "Added jaw type information",
-              "Used standard measurement format (10\")",
-              "Included model number"
-            ]
-          },
-          "bullet": {
-            "optimized_text": [
-              "SMOOTH JAW DESIGN: Ideal for plated fixtures, chrome, and nickel surfaces without scratching",
-              "PERMALOCK FASTENER: Eliminates nut and bolt failure for enhanced durability"
-            ],
-            "optimization_reasoning": "Restructured bullet points to highlight key features, benefits, and usage scenarios while maintaining an informative tone.",
-            "keywords_incorporated": [
-              "smooth jaw",
-              "PERMALOCK",
-              "high-carbon steel"
-            ],
-            "attributes_used": [
-              "jaw_type",
-              "suitable_for",
-              "fastener",
-              "material"
-            ],
-            "improvements_made": [
-              "Emphasized smooth jaw design benefits",
-              "Highlighted durability features",
-              "Added usage scenarios"
-            ]
-          }
-        },
-        "optimization_summary": {
-          "strategy_applied": "Standard optimization for engagement and SEO",
-          "tone_applied": "Informative",
-          "compliance_issues_resolved": [
-            "No compliance issues were identified in the audit"
-          ],
-          "competitor_gaps_addressed": [
-            "Added 'Smooth Jaw' and 'Straight Jaw' attributes to the title",
-            "Used standard measurement format (10\") in the title",
-            "Incorporated brand name CHANNELLOCK® in the description"
-          ],
-          "overall_improvements": [
-            "Enhanced title with more specific product information",
-            "Restructured bullet points for better feature highlighting",
-            "Expanded description to include key features and benefits",
-            "Improved SEO by incorporating relevant keywords throughout the content"
-          ]
-        }
       }
     }
   ],
   "metrics": {
-    "total_wall_clock_time_seconds": 32.1,
-    "average_record_latency_seconds": 6.2,
-    "total_record_processing_time_seconds": 62.0,
-    "concurrency_efficiency": 1.93,
-    "total_cost_usd": 0.0187,
+    "total_wall_clock_time_seconds": 45.2,
+    "average_record_latency_seconds": 8.5,
+    "total_record_processing_time_seconds": 85.0,
+    "concurrency_efficiency": 1.88,
+    "total_cost_usd": 0.0234,
     "successful_records": 1,
     "failed_records": 0,
     "success_rate": 100.0,
@@ -978,6 +932,81 @@ Retrieves the current API configuration.
 
 ---
 
+## S3 Integration & SQS Messaging
+
+### Automatic S3 Storage
+
+All job results are automatically stored in S3 upon completion:
+
+- **S3 Bucket:** `content-recommendation-results`
+- **File Path:** `{job_type}/{job_id}/results.json`
+- **File Format:** JSON
+- **Retention:** 30 days
+
+### SQS Message Format
+
+Upon job completion, an SQS message is sent with the following format:
+
+```json
+{
+  "job_id": "uuid",
+  "job_type": "audit|optimization",
+  "status": "completed|failed",
+  "s3_location": {
+    "bucket": "content-recommendation-results",
+    "key": "audit/550e8400-e29b-41d4-a716-446655440000/results.json",
+    "url": "https://content-recommendation-results.s3.amazonaws.com/audit/550e8400-e29b-41d4-a716-446655440000/results.json",
+    "expires_at": "2024-02-01T12:00:00Z"
+  },
+  "metrics": {
+    "total_wall_clock_time_seconds": "number",
+    "average_record_latency_seconds": "number",
+    "total_cost_usd": "number",
+    "successful_records": "integer",
+    "failed_records": "integer",
+    "success_rate": "number"
+  },
+  "timestamp": "2024-01-01T12:00:00Z"
+}
+```
+
+### SQS Queue Configuration
+
+- **Queue Name:** `content-recommendation-job-results`
+- **Message Format:** JSON
+- **Visibility Timeout:** 30 seconds
+- **Message Retention:** 14 days
+- **Dead Letter Queue:** Enabled for failed message processing
+
+### S3 File Structure
+
+```
+content-recommendation-results/
+├── audit/
+│   ├── 550e8400-e29b-41d4-a716-446655440000/
+│   │   ├── results.json
+│   │   └── metadata.json
+│   └── 550e8400-e29b-41d4-a716-446655440001/
+│       ├── results.json
+│       └── metadata.json
+└── optimization/
+    ├── 550e8400-e29b-41d4-a716-446655440002/
+    │   ├── results.json
+    │   └── metadata.json
+    └── 550e8400-e29b-41d4-a716-446655440003/
+        ├── results.json
+        └── metadata.json
+```
+
+### S3 File Access
+
+- **Public Access:** Disabled
+- **Access Method:** Pre-signed URLs (valid for 30 days)
+- **Download:** Via S3 SDK or pre-signed URL
+- **Format:** JSON with UTF-8 encoding
+
+---
+
 ## Examples
 
 ### Complete Workflow Example
@@ -1026,13 +1055,13 @@ curl -X GET "https://api.content-recommendation.com/v2/get-job-status/550e8400-e
 }
 ```
 
-#### Step 3: Get Audit Results
+#### Step 3: Get Audit Results (with S3 location)
 
 ```bash
-curl -X GET "https://api.content-recommendation.com/v2/get-job-results/550e8400-e29b-41d4-a716-446655440000"
+curl -X GET "https://api.content-recommendation.com/v2/get-job-results/550e8400-e29b-41d4-a716-446655440000?include_s3_location=true"
 ```
 
-**Response:** See `audit_final_output_payload.json` format
+**Response:** See `audit_final_output_payload.json` format with S3 location
 
 #### Step 4: Submit Content Optimization Job
 
@@ -1052,13 +1081,49 @@ curl -X POST "https://api.content-recommendation.com/v2/optimize-content/" \
 }
 ```
 
-#### Step 5: Get Optimization Results
+#### Step 5: Get Optimization Results (with S3 location)
 
 ```bash
-curl -X GET "https://api.content-recommendation.com/v2/get-job-results/550e8400-e29b-41d4-a716-446655440001"
+curl -X GET "https://api.content-recommendation.com/v2/get-job-results/550e8400-e29b-41d4-a716-446655440001?include_s3_location=true"
 ```
 
-**Response:** See `optimize_final_output_payload.json` format
+**Response:** See `optimize_final_output_payload.json` format with S3 location
+
+### SQS Message Processing Example
+
+```python
+import boto3
+import json
+
+# Initialize SQS client
+sqs = boto3.client('sqs')
+queue_url = 'https://sqs.us-east-1.amazonaws.com/123456789012/content-recommendation-job-results'
+
+# Receive messages
+response = sqs.receive_message(
+    QueueUrl=queue_url,
+    MaxNumberOfMessages=10,
+    WaitTimeSeconds=20
+)
+
+for message in response.get('Messages', []):
+    # Parse message body
+    body = json.loads(message['Body'])
+    
+    if body['status'] == 'completed':
+        # Download results from S3
+        s3_location = body['s3_location']
+        print(f"Job {body['job_id']} completed. Results available at: {s3_location['url']}")
+        
+        # Process the results as needed
+        # ...
+    
+    # Delete processed message
+    sqs.delete_message(
+        QueueUrl=queue_url,
+        ReceiptHandle=message['ReceiptHandle']
+    )
+```
 
 ---
 
@@ -1106,6 +1171,8 @@ curl -X GET "https://api.content-recommendation.com/v2/get-job-results/550e8400-
 4. **Data Validation:** Validate input data before sending to the API
 5. **Monitoring:** Use the health endpoint to monitor API status
 6. **Cost Tracking:** Monitor the cost metrics in job results to optimize usage
+7. **S3 Integration:** Use S3 locations for large result sets to avoid API response size limits
+8. **SQS Processing:** Implement proper error handling and retry logic for SQS message processing
 
 ---
 
@@ -1113,10 +1180,11 @@ curl -X GET "https://api.content-recommendation.com/v2/get-job-results/550e8400-
 
 For technical support or questions about this API:
 
-- **Email:** uman.n@dataweave.com
-
+- **Email:** api-support@content-recommendation.com
+- **Documentation:** https://docs.content-recommendation.com
+- **Status Page:** https://status.content-recommendation.com
 
 ---
 
-*Last Updated: August 2024*
-*API Version: 1.0.0* 
+*Last Updated: January 2024*
+*API Version: 2.0.0* 
