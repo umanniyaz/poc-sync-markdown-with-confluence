@@ -1,10 +1,10 @@
 {
-  "baseUrl": "https://dataweave.atlassian.net/wiki/spaces/SEM/pages/2994143241/Content+Audit+Optimization+Service+API+Contract",
+  "baseUrl": "https://dataweave.atlassian.net/wiki/spaces/SEM/pages/",
   "cachePath": "build",
   "prefix": "This document is automatically generated. Please don't edit it directly!",
   "pages": [
     {
-      "pageId": "360554",
+      "pageId": "2994143241",
       "file": "Content_Recommendation_API:Batch_API_Contract.md",
       "title": "Content Audit & Optimization Contract"
     }
