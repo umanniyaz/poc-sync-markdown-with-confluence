@@ -1,5 +1,5 @@
 {
-  "baseUrl": "https://dataweave.atlassian.net/wiki/spaces/SEM/pages/",
+  "baseUrl": "https://dataweave.atlassian.net/wiki/spaces/SEM/pages/edit-v2/",
   "cachePath": "build",
   "prefix": "This document is automatically generated. Please don't edit it directly!",
   "pages": [
