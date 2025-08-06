@@ -1,21 +1,12 @@
 {
-  "baseUrl": "https://ulisesgascondemo.atlassian.net/wiki/rest/api",
+  "baseUrl": "https://dataweave.atlassian.net/wiki/spaces/SEM/pages/2994143241/Content+Audit+Optimization+Service+API+Contract",
   "cachePath": "build",
   "prefix": "This document is automatically generated. Please don't edit it directly!",
   "pages": [
     {
       "pageId": "360554",
-      "file": "README.md",
-      "title": "Sync Markdown files with Confluence"
-    },
-    {
-      "pageId": "360561",
-      "file": "pages/demo1.md",
-      "title": "Demo Page 1 - Simple Markdown to Confluence"
-    }, {
-      "pageId": "360568",
-      "file": "pages/demo2.md",
-      "title": "Demo Page 2 - Advance Markdown and Media to Confluence"
+      "file": "Content_Recommendation_API:Batch_API_Contract.md",
+      "title": "Content Audit & Optimization Contract"
     }
   ]
 }
