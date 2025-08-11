@@ -305,5 +305,64 @@ The system provides comprehensive logging for:
 - **Retry actions** taken
 - **Performance metrics** (timing information)
 - **Success/failure rates** for monitoring
+- 
+## UUID Logging and Tracking
+
+### UUID Context in Logs
+Every log entry includes UUID context for complete traceability:
+
+```python
+# From content_analysis_orchestrator_2.py
+def log_record_response(self, record, status, error_details=None):
+    uuid = record.get("uuid", "NO_UUID")
+    title = record.get("title", "NO_TITLE")
+    account_code = record.get("meta_info", {}).get("account_code", "NO_ACCOUNT")
+    source_name = record.get("meta_info", {}).get("source_name_primary", "NO_SOURCE")
+    
+    if status == "SUCCESS":
+        logger.info(f"SUCCESS | UUID: {uuid} | Title: {title[:50]}... | Account: {account_code} | Source: {source_name}")
+    else:
+        logger.error(f"FAILED | UUID: {uuid} | Title: {title[:50]}... | Account: {account_code} | Source: {source_name}")
+```
+
+### Fixed Context Filter for UUID Tracking
+The system uses a FixedContextFilter to maintain UUID context across all log entries:
+
+```python
+# Set context for logging with UUID
+FixedContextFilter.set_context(**input_record.get("meta_info", {}))
+FixedContextFilter.set_context(audit_type=input_record.get("audit_type", ""))
+FixedContextFilter.set_context(analysis_required=(input_record.get("analysis_required") or [""])[0])
+FixedContextFilter.set_context(uuid=incoming_uuid)
+```
+
+### Log Format Examples
+
+#### Success Log Entry
+```
+SUCCESS | UUID: b63a2c21-0344-43fb-a803-ea501c3f10c4_20250725073232142841 | Title: Peach Juice Boxes, 8 x 200 ML... | Account: gspklpccan | Source: Walmart-CA | Analysis: 8 items | Time: 0.52s (T:0.01s, I:0.51s)
+```
+
+#### Error Log Entry
+```
+FAILED | UUID: b63a2c21-0344-43fb-a803-ea501c3f10c4_20250725073232142841 | Title: Peach Juice Boxes, 8 x 200 ML... | Account: gspklpccan | Source: Walmart-CA | Error: ERR_1008 (VALIDATION_ERROR) | Description: Retry after correction only - Image download failed | Retry: retry_after_correction | Details: Failed to download image...
+```
+
+### UUID in Processing Summary
+The system logs processing summaries with UUID counts:
+
+```
+PROCESSING SUMMARY | Total: 1 | Success: 0 | Failed: 1 | Success Rate: 0.0%
+```
+
+### Benefits of UUID Logging
+1. **Complete Traceability**: Every log entry can be traced back to a specific record
+2. **Debugging Support**: Easy to filter logs by UUID for troubleshooting
+3. **Audit Trail**: Full audit trail for compliance and monitoring
+4. **Performance Tracking**: Track processing time per UUID
+5. **Error Correlation**: Correlate errors across different processing stages
+
+This documentation provides a comprehensive overview of the retry system, payload structures, analysis types, and UUID logging used in the Content Analysis Orchestrator system.
+
 
 This documentation provides a comprehensive overview of the retry system, payload structures, and analysis types used in the Content Analysis Orchestrator system.
